@@ -2,7 +2,7 @@
   "name": "vscode-makelist-helper",
   "displayName": "vscode_makelist_helper",
   "description": "Helps user add files to CMakeLists.txt",
-  "version": "0.0.1",
+  "version": "0.0.8",
   "engines": {
     "vscode": "^1.95.0"
   },
@@ -13,17 +13,35 @@
   "main": "./dist/extension.js",
   "contributes": {
     "commands": [{
-        "command": "cmake-file-manager.addToCMake",
+        "command": "vscode-makelist-helper.addToCMake",
         "title": "Add to CMakeLists.txt"
     }],
     "menus": {
         "explorer/context": [{
             "when": "resourceExtname =~ /\\.(cpp|hpp|h)$/",
-            "command": "cmake-file-manager.addToCMake",
+            "command": "vscode-makelist-helper.addToCMake",
             "group": "1_modification"
         }]
+    },
+    "configuration": {
+        "title": "CMakeLists Helper",
+        "properties": {
+            "vscode-makelist-helper.setFileMapping": {
+                "type": "object",
+                "default": {
+                    ".h": "HEADER",
+                    ".hpp": "HEADER",
+                    ".hxx": "HEADER",
+                    ".cpp": "SOURCE",
+                    ".cxx": "SOURCE",
+                    ".cc": "SOURCE"
+                },
+                "description": "Map file extensions to CMake set() variable names"
+            }
+        }
     }
 },
+
 "repository": {
   "type": "git",
   "url": "https://github.com/YOUR_USERNAME/cmake-file-manager.git"
