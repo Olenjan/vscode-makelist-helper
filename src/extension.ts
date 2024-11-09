@@ -50,7 +50,10 @@ function addToCMake(cmakePath: string, filePath: string): boolean {
     let targetVariable: string = getTargetVariable(filePath);
 
     // Create a regex to match the correct set block (HEADERS or SOURCES)
-    const regex = new RegExp(`set\\(${targetVariable}([\\s\\S]*?)\\)`, 'm');
+
+    
+    //const regex = new RegExp(`set\\(\\b${targetVariable}\\b([\\s\\S]*?)\\)`, 'm'); //More strict
+    const regex = new RegExp(`set\\(${targetVariable}([\\s\\S]*?)\\)`, 'm'); //More loose
     const match = content.match(regex);
 
     if (match) {
