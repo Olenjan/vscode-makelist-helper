@@ -2,7 +2,7 @@
   "name": "vscode-makelist-helper",
   "displayName": "vscode_makelist_helper",
   "description": "Helps user add files to CMakeLists.txt",
-  "version": "0.0.8",
+  "version": "0.0.13",
   "engines": {
     "vscode": "^1.95.0"
   },
@@ -29,12 +29,12 @@
             "vscode-makelist-helper.setFileMapping": {
                 "type": "object",
                 "default": {
-                    ".h": "HEADER",
-                    ".hpp": "HEADER",
-                    ".hxx": "HEADER",
-                    ".cpp": "SOURCE",
-                    ".cxx": "SOURCE",
-                    ".cc": "SOURCE"
+                    ".h": "HEADERS",
+                    ".hpp": "HEADERS",
+                    ".hxx": "HEADERS",
+                    ".cpp": "SOURCES",
+                    ".cxx": "SOURCES",
+                    ".cc": "SOURCES"
                 },
                 "description": "Map file extensions to CMake set() variable names"
             }
