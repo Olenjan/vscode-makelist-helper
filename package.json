@@ -23,8 +23,12 @@
             "group": "1_modification"
         }]
     }
-}
-,
+},
+"repository": {
+  "type": "git",
+  "url": "https://github.com/YOUR_USERNAME/cmake-file-manager.git"
+},
+"license": "MIT",
   "scripts": {
     "vscode:prepublish": "npm run package",
     "compile": "webpack",
