@@ -7,6 +7,115 @@ function createSetRegex(targetVariable: string): RegExp {
     return new RegExp(`set\\(\\s*${targetVariable}(?:[ \\t]|\\r?\\n)([\\s\\S]*?)\\)`, 'm');
 }
 
+function createIncludeDirectoriesRegex(): RegExp {
+    return new RegExp(`include_directories\\(([\\s\\S]*?)\\)`, 'm');
+}
+
+export async function addIncludeDirectory(cmakePath: string, dirPath: string): Promise<boolean> {
+    const content = fs.readFileSync(cmakePath, 'utf8');
+    const relativePath = path.relative(path.dirname(cmakePath), dirPath).replace(/\\/g, '/');
+    const includeEntry = `\${CMAKE_CURRENT_SOURCE_DIR}/${relativePath}`;
+
+    const regex = createIncludeDirectoriesRegex();
+    const match = content.match(regex);
+
+    if (!match) {
+        // If no include_directories block exists, create one after project() or at the beginning
+        const projectMatch = content.match(/project\([^)]+\)/);
+        let newContent;
+        
+        if (projectMatch) {
+            const insertPosition = projectMatch.index! + projectMatch[0].length;
+            newContent = 
+                content.slice(0, insertPosition) +
+                `\n\ninclude_directories(\n    ${includeEntry}\n)` +
+                content.slice(insertPosition);
+        } else {
+            newContent = `include_directories(\n    ${includeEntry}\n)\n\n${content}`;
+        }
+        
+        fs.writeFileSync(cmakePath, newContent);
+        return true;
+    }
+
+    const currentBlock = match[1];
+    const normalizedBlock = currentBlock.split('\n')
+        .map(line => line.trim())
+        .filter(line => line.length > 0);
+
+    if (normalizedBlock.includes(includeEntry)) {
+        return false;
+    }
+
+    try {
+        const cleanedBlock = normalizedBlock.join('').trim();
+        let newBlock;
+        if (cleanedBlock.length === 0) {
+            newBlock = `include_directories(\n    ${includeEntry}\n)`;
+        } else {
+            const existingContent = normalizedBlock.join('\n    ');
+            newBlock = `include_directories(\n    ${existingContent}\n    ${includeEntry}\n)`;
+        }
+        
+        const matchedBlock = match[0];
+        const newContent = content.replace(matchedBlock, newBlock);
+        fs.writeFileSync(cmakePath, newContent);
+        return true;
+    } catch (error) {
+        throw new Error(`Failed to add include directory ${dirPath}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+}
+
+export async function removeIncludeDirectory(cmakePath: string, dirPath: string): Promise<boolean> {
+    const content = fs.readFileSync(cmakePath, 'utf8');
+    const relativePath = path.relative(path.dirname(cmakePath), dirPath).replace(/\\/g, '/');
+    const includeEntry = `\${CMAKE_CURRENT_SOURCE_DIR}/${relativePath}`;
+
+    const regex = createIncludeDirectoriesRegex();
+    const match = content.match(regex);
+
+    if (!match) {
+        return false;
+    }
+
+    const currentBlock = match[1];
+    const normalizedBlock = currentBlock.split('\n')
+        .map(line => line.trim())
+        .filter(line => line.length > 0);
+
+    if (!normalizedBlock.includes(includeEntry)) {
+        return false;
+    }
+
+    try {
+        const updatedBlock = normalizedBlock.filter(line => line !== includeEntry);
+        
+        let newBlock;
+        if (updatedBlock.length === 0) {
+            newBlock = `include_directories(\n)`;
+        } else {
+            newBlock = `include_directories(\n    ${updatedBlock.join('\n    ')}\n)`;
+        }
+
+        const matchedBlock = match[0];
+        const newContent = content.replace(matchedBlock, newBlock);
+        fs.writeFileSync(cmakePath, newContent);
+        return true;
+    } catch (error) {
+        throw new Error(`Failed to remove include directory ${dirPath}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+}
+
+// Add this function to handle directory selection
+export async function handleDirectorySelection(uri: vscode.Uri): Promise<string | undefined> {
+    const stats = await vscode.workspace.fs.stat(uri);
+    if (stats.type === vscode.FileType.Directory) {
+        return uri.fsPath;
+    }
+    
+    // If a file is selected, use its parent directory
+    return path.dirname(uri.fsPath);
+}
 
 export async function checkMissingSetBlocks(cmakePath: string, files: vscode.Uri[], mapping: { [key: string]: string }): Promise<Set<string>> {
     const content = fs.readFileSync(cmakePath, 'utf8');

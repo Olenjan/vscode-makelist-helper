@@ -2,7 +2,7 @@
   "name": "vscode-makelist-helper",
   "displayName": "vscode_makelist_helper",
   "description": "Helps user add files to CMakeLists.txt",
-  "version": "0.0.24",
+  "version": "0.1.0",
   "engines": {
     "vscode": "^1.95.0"
   },
@@ -14,17 +14,28 @@
     "onLanguage:cmake"
   ],
   "main": "./dist/extension.js",
+
+
   "contributes": {
     "commands": [
       {
         "command": "vscode-makelist-helper.addToCMake",
-        "title": "Add"
+        "title": "Add File"
       },
       {
       "command": "vscode-makelist-helper.removeFromCMake",
-      "title": "Remove"
+      "title": "Remove File"
+      },
+      {
+        "command": "vscode-makelist-helper.addIncludeDirectory",
+        "title": "Add Directory"
+      },
+      {
+        "command": "vscode-makelist-helper.removeIncludeDirectory",
+        "title": "Remove Directory"
       }
     ],
+
     "languages": [
       {
         "id": "cmake",
@@ -32,38 +43,58 @@
         "aliases": ["CMake", "cmake"]
       }
     ],
-    "menus": {
-      "commandPalette": [
-        {
-          "command": "cmakeListsHelper.openFileByName",
-          "when": "editorLangId == cmake",
-          "group": "navigation"
-        }
-      ],
-      "explorer/context": [{
-        "when": "resourceExtname in cmake-helper.supportedExtensions",
-        "submenu": "cmake.fileHelper",
-        "group": "1_modification"
-      }],
-      "cmake.fileHelper": [
-        {
-          "command": "vscode-makelist-helper.addToCMake",
-          "group": "1_modification",
-          "title": "Add"
-        },
-        {
-          "command": "vscode-makelist-helper.removeFromCMake",
-          "group": "1_modification",
-          "title": "Remove"
-        }
-      ]
-    },
+    
     "submenus": [
+    {
+      "id": "cmake.fileHelper",
+      "label": "CMakeLists File Helper"
+    }
+  ],
+
+
+  "menus": {
+    "commandPalette": [
       {
-        "id": "cmake.fileHelper",
-        "label": "CMakeLists File Helper"
+        "command": "cmakeListsHelper.openFileByName",
+        "when": "editorLangId == cmake",
+        "group": "navigation"
       }
     ],
+    "explorer/context": [
+      {
+        "when": "resourceExtname in cmake-helper.supportedExtensions || explorerResourceIsFolder",
+        "submenu": "cmake.fileHelper",
+        "group": "1_modification"
+      }
+    ],
+    "cmake.fileHelper": [
+      {
+        "command": "vscode-makelist-helper.addToCMake",
+        "group": "1_modification",
+        "title": "Add File",
+        "when": "resourceExtname in cmake-helper.supportedExtensions"
+      },
+      {
+        "command": "vscode-makelist-helper.removeFromCMake",
+        "group": "1_modification",
+        "title": "Remove File",
+        "when": "resourceExtname in cmake-helper.supportedExtensions"
+      },
+      {
+        "command": "vscode-makelist-helper.addIncludeDirectory",
+        "group": "1_modification",
+        "title": "Add Directory",
+        "when": "explorerResourceIsFolder"
+      },
+      {
+        "command": "vscode-makelist-helper.removeIncludeDirectory",
+        "group": "1_modification",
+        "title": "Remove Directory",
+        "when": "explorerResourceIsFolder"
+      }]
+    },
+
+
     "configuration": {
         "title": "CMakeLists Helper",
         "properties": {
@@ -89,6 +120,8 @@
           }
         }
     }
+
+
 },
 
 "repository": {

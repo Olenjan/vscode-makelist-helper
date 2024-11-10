@@ -6,8 +6,10 @@ import { checkDefaultWorkspaceSettings, updateSupportedExtensionsContext } from 
 import {    checkMissingSetBlocks, createMissingSetBlocks,
             handleFileSelection,
             selectCMakeFile, addToCMake, removeFromCMake,
-            openCMakeListsIfRequested } from './cmakeHelpers';
-import { CMakeListsLinkProvider } from './documentLinkProvider'
+            openCMakeListsIfRequested,
+            findCMakeLists, handleDirectorySelection,
+            addIncludeDirectory, removeIncludeDirectory} from './cmakeHelpers';
+import { CMakeListsLinkProvider } from './documentLinkProvider';
 
 async function refreshDocumentLinks(document: vscode.TextDocument) {
     Logger.log('Refreshing links for:', document.fileName);
@@ -185,7 +187,79 @@ export async function activate(context: vscode.ExtensionContext) {
             }
         });
 
-        context.subscriptions.push(openFileByName, addDisposable, removeDisposable);
+        let addIncludeDisposable = vscode.commands.registerCommand(
+            'vscode-makelist-helper.addIncludeDirectory',
+            async (uri: vscode.Uri) => {
+                try {
+                    const dirPath = await handleDirectorySelection(uri);
+                    if (!dirPath) {
+                        return;
+                    }
+        
+                    const cmakeFiles = findCMakeLists(dirPath);
+                    if (cmakeFiles.length === 0) {
+                        vscode.window.showErrorMessage('No CMakeLists.txt found!');
+                        return;
+                    }
+        
+                    const selected = await selectCMakeFile([vscode.Uri.file(dirPath)]);
+                    if (!selected) {
+                        return;
+                    }
+        
+                    const added = await addIncludeDirectory(selected.description!, dirPath);
+                    
+                    let message = added 
+                        ? `Added include directory successfully.` 
+                        : `Directory was already included.`;
+        
+                    await openCMakeListsIfRequested(message, selected.description!);
+        
+                } catch (error) {
+                    Logger.error(`Unexpected error while adding include directory: ${error instanceof Error ? error.message : 'Unknown error'}`);
+                }
+            }
+        );
+
+        let removeIncludeDisposable = vscode.commands.registerCommand(
+            'vscode-makelist-helper.removeIncludeDirectory',
+            async (uri: vscode.Uri) => {
+                try {
+                    const dirPath = await handleDirectorySelection(uri);
+                    if (!dirPath) {
+                        return;
+                    }
+        
+                    const cmakeFiles = findCMakeLists(dirPath);
+                    if (cmakeFiles.length === 0) {
+                        vscode.window.showErrorMessage('No CMakeLists.txt found!');
+                        return;
+                    }
+        
+                    const selected = await selectCMakeFile([vscode.Uri.file(dirPath)]);
+                    if (!selected) {
+                        return;
+                    }
+        
+                    const removed = await removeIncludeDirectory(selected.description!, dirPath);
+                    
+                    let message = removed 
+                        ? `Removed include directory successfully.` 
+                        : `Directory was not found in include_directories().`;
+        
+                    await openCMakeListsIfRequested(message, selected.description!);
+        
+                } catch (error) {
+                    Logger.error(`Unexpected error while removing include directory: ${error instanceof Error ? error.message : 'Unknown error'}`);
+                }
+            }
+        );
+
+        context.subscriptions.push(
+            openFileByName,
+            addDisposable, removeDisposable,
+            addIncludeDisposable, removeIncludeDisposable
+        );
 
     } catch (error) {
         Logger.error(`Activation error: ${error instanceof Error ? error.message : 'Unknown error'}`);

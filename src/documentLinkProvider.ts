@@ -65,7 +65,9 @@ export class CMakeListsLinkProvider implements vscode.DocumentLinkProvider {
                             // Find the exact position using the quoted string
                             const fullMatch = match[0];
                             const quotedStringIndex = fullMatch.indexOf(fullQuotedString);
-                            if (quotedStringIndex === -1) continue;
+                            if (quotedStringIndex === -1){
+                                continue;
+                            }
 
                             // Calculate positions based on the quoted string
                             const absoluteStart = match.index + quotedStringIndex + 1; // +1 to skip the opening quote
