@@ -2,27 +2,53 @@
   "name": "vscode-makelist-helper",
   "displayName": "vscode_makelist_helper",
   "description": "Helps user add files to CMakeLists.txt",
-  "version": "0.0.13",
+  "version": "0.0.18",
   "engines": {
     "vscode": "^1.95.0"
   },
   "categories": [
     "Other"
   ],
-  "activationEvents": [],
+  "activationEvents": [
+    "workspaceContains:**/CMakeLists.txt"
+  ],
   "main": "./dist/extension.js",
   "contributes": {
-    "commands": [{
+    "commands": [
+      {
         "command": "vscode-makelist-helper.addToCMake",
-        "title": "Add to CMakeLists.txt"
-    }],
+        "title": "Add"
+      },
+      {
+      "command": "vscode-makelist-helper.removeFromCMake",
+      "title": "Remove"
+      }
+    ],
     "menus": {
         "explorer/context": [{
-            "when": "resourceExtname =~ /\\.(cpp|hpp|h)$/",
+          "when": "resourceExtname in cmake-helper.supportedExtensions",
+          "submenu": "cmake.fileHelper",
+          "group": "1_modification"
+        }],
+        "cmake.fileHelper": [
+          {
             "command": "vscode-makelist-helper.addToCMake",
-            "group": "1_modification"
-        }]
+            "group": "1_modification",
+            "title": "Add"
+          },
+          {
+            "command": "vscode-makelist-helper.removeFromCMake",
+            "group": "1_modification",
+            "title": "Remove"
+          }
+        ]
     },
+    "submenus": [
+      {
+        "id": "cmake.fileHelper",
+        "label": "CMakeLists File Helper"
+      }
+    ],
     "configuration": {
         "title": "CMakeLists Helper",
         "properties": {
@@ -37,7 +63,15 @@
                     ".cc": "SOURCES"
                 },
                 "description": "Map file extensions to CMake set() variable names"
-            }
+            },
+            "vscode-makelist-helper.supportedExtensions": {
+              "type": "array",
+              "items": {
+                  "type": "string"
+              },
+              "default": [".cpp", ".hpp", ".h", ".hxx", ".cxx", ".cc"],
+              "description": "List of file extensions that can be added to CMakeLists.txt"
+          }
         }
     }
 },
