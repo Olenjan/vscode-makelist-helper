@@ -2,7 +2,7 @@
   "name": "vscode-makelist-helper",
   "displayName": "vscode_makelist_helper",
   "description": "Helps user add files to CMakeLists.txt",
-  "version": "0.0.20",
+  "version": "0.0.24",
   "engines": {
     "vscode": "^1.95.0"
   },
@@ -10,7 +10,8 @@
     "Other"
   ],
   "activationEvents": [
-    "workspaceContains:**/CMakeLists.txt"
+    "workspaceContains:**/CMakeLists.txt",
+    "onLanguage:cmake"
   ],
   "main": "./dist/extension.js",
   "contributes": {
@@ -24,24 +25,38 @@
       "title": "Remove"
       }
     ],
+    "languages": [
+      {
+        "id": "cmake",
+        "extensions": [".cmake", "CMakeLists.txt"],
+        "aliases": ["CMake", "cmake"]
+      }
+    ],
     "menus": {
-        "explorer/context": [{
-          "when": "resourceExtname in cmake-helper.supportedExtensions",
-          "submenu": "cmake.fileHelper",
-          "group": "1_modification"
-        }],
-        "cmake.fileHelper": [
-          {
-            "command": "vscode-makelist-helper.addToCMake",
-            "group": "1_modification",
-            "title": "Add"
-          },
-          {
-            "command": "vscode-makelist-helper.removeFromCMake",
-            "group": "1_modification",
-            "title": "Remove"
-          }
-        ]
+      "commandPalette": [
+        {
+          "command": "cmakeListsHelper.openFileByName",
+          "when": "editorLangId == cmake",
+          "group": "navigation"
+        }
+      ],
+      "explorer/context": [{
+        "when": "resourceExtname in cmake-helper.supportedExtensions",
+        "submenu": "cmake.fileHelper",
+        "group": "1_modification"
+      }],
+      "cmake.fileHelper": [
+        {
+          "command": "vscode-makelist-helper.addToCMake",
+          "group": "1_modification",
+          "title": "Add"
+        },
+        {
+          "command": "vscode-makelist-helper.removeFromCMake",
+          "group": "1_modification",
+          "title": "Remove"
+        }
+      ]
     },
     "submenus": [
       {

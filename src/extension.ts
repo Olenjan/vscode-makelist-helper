@@ -1,11 +1,35 @@
 import * as vscode from 'vscode';
+import * as path from 'path';
 import { Logger } from './logger';
-import { CMakeFileWatcher } from './cmakeFileWatcher';
+import { DeleteFileWatcher } from './cmakeFileWatcher';
 import { checkDefaultWorkspaceSettings, updateSupportedExtensionsContext } from './helpers';
 import {    checkMissingSetBlocks, createMissingSetBlocks,
             handleFileSelection,
             selectCMakeFile, addToCMake, removeFromCMake,
             openCMakeListsIfRequested } from './cmakeHelpers';
+import { CMakeListsLinkProvider } from './documentLinkProvider'
+
+async function refreshDocumentLinks(document: vscode.TextDocument) {
+    Logger.log('Refreshing links for:', document.fileName);
+    // Close and reopen to clean stale data and reprocess
+    const editor = vscode.window.visibleTextEditors.find(ed => ed.document.uri === document.uri);
+    if (editor) {
+        await vscode.commands.executeCommand('workbench.action.closeActiveEditor');
+    }
+
+    const reopenedDocument = await vscode.workspace.openTextDocument(document.uri);
+    await vscode.window.showTextDocument(reopenedDocument);
+
+    // Since we reopened document, link provider will auto-evaluate ergonomically
+}
+
+function handleFileChange(uri: vscode.Uri) {
+    Logger.log("handleFileChange");
+    const document = vscode.workspace.textDocuments.find(doc => doc.uri.toString() === uri.toString());
+    if (document) {
+        refreshDocumentLinks(document);
+    }
+}
 
 export async function activate(context: vscode.ExtensionContext) {
     try {
@@ -13,9 +37,55 @@ export async function activate(context: vscode.ExtensionContext) {
         await checkDefaultWorkspaceSettings();
         await updateSupportedExtensionsContext();
 
-        // Initialize file watcher
-        const fileWatcher = new CMakeFileWatcher(context);
-        context.subscriptions.push(fileWatcher);
+        // Delete file watcher
+        const deleteFileWatcher = new DeleteFileWatcher(context);
+        context.subscriptions.push(deleteFileWatcher);
+
+        //CMakeLists.txt link provider
+        const linkProvider = vscode.languages.registerDocumentLinkProvider(
+            { language: 'cmake', scheme: 'file' }, new CMakeListsLinkProvider()
+        );
+        context.subscriptions.push(linkProvider);
+        
+
+        // Register the command to open files by name
+        let openFileByName = vscode.commands.registerCommand('cmakeListsHelper.openFileByName', async (fileName: string, cmakeListPath: string) => {
+            const workspaceFolder = vscode.workspace.getWorkspaceFolder(vscode.Uri.file(cmakeListPath));
+        
+            if (!workspaceFolder) {
+                vscode.window.showErrorMessage('No workspace folder found.');
+                return;
+            }
+        
+            try {
+                const possibleFiles = await vscode.workspace.findFiles(`**/${fileName}`);
+        
+                if (possibleFiles.length === 0) {
+                    vscode.window.showErrorMessage(`File "${fileName}" not found in workspace.`);
+                } else if (possibleFiles.length === 1) {
+                    const document = await vscode.workspace.openTextDocument(possibleFiles[0]);
+                    await vscode.window.showTextDocument(document);
+                } else {
+                    const chosenFile = await vscode.window.showQuickPick(
+                        possibleFiles.map(fileUri => ({
+                            label: path.basename(fileUri.fsPath),
+                            description: vscode.workspace.asRelativePath(fileUri)
+                        })),
+                        {
+                            placeHolder: `Multiple files named ${fileName} found. Select which one to open:`
+                        }
+                    );
+        
+                    if (chosenFile) {
+                        Logger.log(`User selected file: ${chosenFile.description}`);
+                        const document = await vscode.workspace.openTextDocument(chosenFile.description!);
+                        await vscode.window.showTextDocument(document);
+                    }
+                }
+            } catch (error) {
+                Logger.error(`Error executing openFileByName: ${error instanceof Error ? error.message : 'Unknown error'}`);
+            }
+        });
 
         // Register 'Add to CMakeLists.txt' command
         let addDisposable = vscode.commands.registerCommand('vscode-makelist-helper.addToCMake', async (uri: vscode.Uri, selectedFiles: vscode.Uri[]) => {
@@ -115,7 +185,7 @@ export async function activate(context: vscode.ExtensionContext) {
             }
         });
 
-        context.subscriptions.push(addDisposable, removeDisposable);
+        context.subscriptions.push(openFileByName, addDisposable, removeDisposable);
 
     } catch (error) {
         Logger.error(`Activation error: ${error instanceof Error ? error.message : 'Unknown error'}`);

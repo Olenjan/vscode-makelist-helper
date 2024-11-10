@@ -3,25 +3,10 @@ import * as path from 'path';
 import * as fs from 'fs';
 import { Logger } from './logger';
 
-async function reloadCMakeListsIfOpen(cmakePath: string) {
-    const openEditors = vscode.window.visibleTextEditors;
-
-    for (const editor of openEditors) {
-        if (editor.document.uri.fsPath === cmakePath) {
-            if (editor.document.isDirty) {
-                await editor.document.save();  // Attempt to save existing changes
-            }
-            // Close and reopen the document
-            await vscode.commands.executeCommand('workbench.action.closeActiveEditor');
-            const document = await vscode.workspace.openTextDocument(cmakePath);
-            await vscode.window.showTextDocument(document);
-            await vscode.window.showInformationMessage(
-                `CMakeLists.txt was updated and reloaded to reflect the latest changes.`
-            );
-            break;
-        }
-    }
+function createSetRegex(targetVariable: string): RegExp {
+    return new RegExp(`set\\(\\s*${targetVariable}(?:[ \\t]|\\r?\\n)([\\s\\S]*?)\\)`, 'm');
 }
+
 
 export async function checkMissingSetBlocks(cmakePath: string, files: vscode.Uri[], mapping: { [key: string]: string }): Promise<Set<string>> {
     const content = fs.readFileSync(cmakePath, 'utf8');
@@ -30,7 +15,7 @@ export async function checkMissingSetBlocks(cmakePath: string, files: vscode.Uri
     files.forEach(file => {
         const ext = path.extname(file.fsPath).toLowerCase();
         const targetVariable = mapping[ext];
-        const regex = new RegExp(`set\\(\\s*${targetVariable}(?:[ \\t]|\\r?\\n)[\\s\\S]*?\\)`, 'm');
+        const regex = createSetRegex(targetVariable);
         if (!content.match(regex)) {
             missingSetBlocks.add(targetVariable);
         }
@@ -148,7 +133,7 @@ export async function addToCMake(cmakePath: string, filePath: string): Promise<b
     const quotedRelativePath = `"${relativePath}"`;
     let targetVariable: string = getTargetVariable(filePath);
 
-    const regex = new RegExp(`set\\(\\s*${targetVariable}(?:[ \\t]|\\r?\\n)([\\s\\S]*?)\\)`, 'm');
+    const regex = createSetRegex(targetVariable);
     const match = content.match(regex);
 
     if (!match) {
@@ -187,7 +172,7 @@ export async function removeFromCMake(cmakePath: string, filePath: string): Prom
     const quotedRelativePath = `"${relativePath}"`;
     const targetVariable = getTargetVariable(filePath);
 
-    const regex = new RegExp(`set\\(\\s*${targetVariable}(?:[ \\t]|\\r?\\n)([\\s\\S]*?)\\)`, 'm');
+    const regex = createSetRegex(targetVariable);
     const match = content.match(regex);
 
     if (!match) {

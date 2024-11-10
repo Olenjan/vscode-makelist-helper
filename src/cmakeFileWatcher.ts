@@ -3,7 +3,7 @@ import * as path from 'path';
 import { Logger } from './logger';
 import { findCMakeLists, selectCMakeFile, removeFromCMake, openCMakeListsIfRequested } from './cmakeHelpers';
 
-export class CMakeFileWatcher {
+export class DeleteFileWatcher {
     private watcher: vscode.FileSystemWatcher;
     private deletedFiles: Set<string> = new Set();
     private deleteTimer: NodeJS.Timeout | null = null;
