@@ -2,7 +2,7 @@
   "name": "vscode-makelist-helper",
   "displayName": "vscode_makelist_helper",
   "description": "Helps user add files to CMakeLists.txt",
-  "version": "0.0.18",
+  "version": "0.0.20",
   "engines": {
     "vscode": "^1.95.0"
   },
