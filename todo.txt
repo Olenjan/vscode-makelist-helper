@@ -1,0 +1,2 @@
+* Add ignore dir to settings.json
+	- So build files (temporary files would not spam addition/deletion during build time.)
